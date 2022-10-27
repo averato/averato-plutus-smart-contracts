@@ -41,6 +41,7 @@ common lang
 library
     import: lang
     exposed-modules:
+      Token.OnChain
       Utils
       Plutus.Contracts.Game
     build-depends:
