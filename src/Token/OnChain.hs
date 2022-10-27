@@ -19,19 +19,21 @@ module Token.OnChain
     ,  MintParams (..)
     ) where
 
-import           Ledger                               hiding (mint,
-                                                       ownCurrencySymbol,
-                                                       singleton)
+import           Ledger                                                hiding
+                                                                       (mint,
+                                                                        ownCurrencySymbol,
+                                                                        singleton)
 -- import qualified Ledger.Typed.Scripts                 as Scripts
-import qualified Ledger.Value                         as Value
-import qualified Plutus.Script.Utils.V2.Scripts       as PS.V2
-import qualified Plutus.Script.Utils.V2.Typed.Scripts as PS.V2
-import qualified Plutus.V2.Ledger.Api                 as PlutusV2
-import           Plutus.V2.Ledger.Contexts            (ownCurrencySymbol)
+import qualified Ledger.Value                                          as Value
+import qualified Plutus.Script.Utils.V2.Scripts                        as PS.V2
+import qualified Plutus.Script.Utils.V2.Typed.Scripts.MonetaryPolicies as PS.V2
+import qualified Plutus.V2.Ledger.Api                                  as PlutusV2
+import           Plutus.V2.Ledger.Contexts                             (ownCurrencySymbol)
 import qualified PlutusTx
-import           PlutusTx.Prelude                     hiding (Semigroup (..),
-                                                       unless)
-import qualified Prelude                              (Show (..), (.))
+import           PlutusTx.Prelude                                      hiding
+                                                                       (Semigroup (..),
+                                                                        unless)
+import qualified Prelude                                               (Show (..))
 
 data MintParams = MintParams
                 { mpRef       :: !PlutusV2.TxOutRef
@@ -62,11 +64,9 @@ mkTokenPolicy oref ctx =  traceIfFalse "UTxO not consumed"   hasUTxO
         [(cs, _, amt)] -> cs == ownCurrencySymbol ctx && amt == 1
         _              -> False
 
-tokenPolicy :: MintParams -> PlutusV2.MintingPolicy
-tokenPolicy params = PlutusV2.mkMintingPolicyScript $$(PlutusTx.compile [|| wrap ||])
---     `PlutusTx.applyCode`
---   PlutusTx.liftCode params
+tokenPolicy :: PlutusV2.MintingPolicy
+tokenPolicy = PlutusV2.mkMintingPolicyScript $$(PlutusTx.compile [|| wrap ||])
   where wrap =  PS.V2.mkUntypedMintingPolicy mkTokenPolicy
 
-tokenCurSymbol :: MintParams -> CurrencySymbol
-tokenCurSymbol = PS.V2.scriptCurrencySymbol . tokenPolicy
+tokenCurSymbol :: CurrencySymbol
+tokenCurSymbol = PS.V2.scriptCurrencySymbol tokenPolicy

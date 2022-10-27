@@ -8,7 +8,7 @@
 {-# LANGUAGE TypeApplications    #-}
 {-# LANGUAGE TypeFamilies        #-}
 
-module Week06.Token.OffChain
+module Token.OffChain
     ( TokenParams (..)
     , adjustAndSubmit, adjustAndSubmitWith
     , mintToken
@@ -23,10 +23,10 @@ import           Data.Text              (Text, pack)
 import           Data.Void              (Void)
 import           GHC.Generics           (Generic)
 import           Ledger                 hiding (mint, singleton)
-import           Ledger.Constraints     as Constraints
+import qualified Ledger.Constraints     as Constraints
 import qualified Ledger.Typed.Scripts   as Scripts
 import           Ledger.Value           as Value
-import           Plutus.Contract        as Contract
+import qualified Plutus.Contract        as Contract
 import           Plutus.Contract.Wallet (getUnspentOutput)
 import qualified PlutusTx
 import           PlutusTx.Prelude       hiding (Semigroup (..), unless)
@@ -34,8 +34,10 @@ import           Prelude                (Semigroup (..), Show (..), String)
 import qualified Prelude
 import           Text.Printf            (printf)
 
-import           Week06.Token.OnChain
-import           Week06.Utils           (getCredentials)
+-- import qualified Ledger.Tx.Constraints  as Constraints
+import           Plutus.Contract        (Contract (..))
+import           Token.OnChain
+import           Utils                  (getCredentials)
 
 data TokenParams = TokenParams
     { tpToken   :: !TokenName
@@ -45,29 +47,29 @@ data TokenParams = TokenParams
 adjustAndSubmitWith :: ( PlutusTx.FromData (Scripts.DatumType a)
                        , PlutusTx.ToData (Scripts.RedeemerType a)
                        , PlutusTx.ToData (Scripts.DatumType a)
-                       , AsContractError e
+                       , Contract.AsContractError e
                        )
-                    => ScriptLookups a
-                    -> TxConstraints (Scripts.RedeemerType a) (Scripts.DatumType a)
+                    => Constraints.ScriptLookups a
+                    -> Constraints.TxConstraints (Scripts.RedeemerType a) (Scripts.DatumType a)
                     -> Contract w s e CardanoTx
 adjustAndSubmitWith lookups constraints = do
-    unbalanced <- adjustUnbalancedTx <$> mkTxConstraints lookups constraints
+    unbalanced <- Contract.adjustUnbalancedTx =<< Contract.mkTxConstraints lookups constraints
     Contract.logDebug @String $ printf "unbalanced: %s" $ show unbalanced
-    unsigned <- balanceTx unbalanced
+    unsigned <- Contract.balanceTx unbalanced
     Contract.logDebug @String $ printf "balanced: %s" $ show unsigned
-    signed <- submitBalancedTx unsigned
+    signed <- Contract.submitBalancedTx unsigned
     Contract.logDebug @String $ printf "signed: %s" $ show signed
     return signed
 
 adjustAndSubmit :: ( PlutusTx.FromData (Scripts.DatumType a)
                    , PlutusTx.ToData (Scripts.RedeemerType a)
                    , PlutusTx.ToData (Scripts.DatumType a)
-                   , AsContractError e
+                   , Contract.AsContractError e
                    )
                 => Scripts.TypedValidator a
-                -> TxConstraints (Scripts.RedeemerType a) (Scripts.DatumType a)
+                -> Constraints.TxConstraints (Scripts.RedeemerType a) (Scripts.DatumType a)
                 -> Contract w s e CardanoTx
-adjustAndSubmit inst = adjustAndSubmitWith $ Constraints.typedValidatorLookups inst
+adjustAndSubmit = adjustAndSubmitWith . Constraints.typedValidatorLookups
 
 mintToken :: TokenParams -> Contract w s Text CurrencySymbol
 mintToken tp = do
@@ -81,12 +83,12 @@ mintToken tp = do
             Contract.logDebug @String $ printf "picked UTxO at %s with value %s" (show oref) (show $ _ciTxOutValue o)
 
             let tn          = tpToken tp
-                cs          = tokenCurSymbol. MintParams oref $ tn
+                cs          = tokenCurSymbol
                 val         = Value.singleton cs tn 1
                 c           = case my of
                     Nothing -> Constraints.mustPayToPubKey x val
                     Just y  -> Constraints.mustPayToPubKeyAddress x y val
-                lookups     =  Constraints.mintingPolicy (tokenPolicy . MintParams oref $ tn)
+                lookups     =  Constraints.plutusV2MintingPolicy tokenPolicy
                             <> Constraints.unspentOutputs (Map.singleton oref o)
                 constraints = Constraints.mustMintValue val          <>
                               Constraints.mustSpendPubKeyOutput oref <>

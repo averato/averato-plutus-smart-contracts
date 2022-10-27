@@ -42,6 +42,7 @@ library
     import: lang
     exposed-modules:
       Token.OnChain
+      Token.OffChain
       Utils
       Plutus.Contracts.Game
     build-depends:
@@ -63,9 +64,10 @@ library
       plutus-script-utils -any,
       plutus-chain-index-core -any,
       plutus-pab -any,
-      text -any,
-      lens -any,
-      serialise -any
+      text -any
+      , lens -any
+      , serialise -any
+      , openapi3 -any
     hs-source-dirs: src examples/src
 
 test-suite plutus-example-projects-test
