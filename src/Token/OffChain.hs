@@ -36,8 +36,10 @@ import           Text.Printf            (printf)
 
 -- import qualified Ledger.Tx.Constraints  as Constraints
 import           Plutus.Contract        (Contract (..))
+import qualified Plutus.V2.Ledger.Api   as PLA.V2
 import           Token.OnChain
 import           Utils                  (getCredentials)
+
 
 data TokenParams = TokenParams
     { tpToken   :: !TokenName
@@ -85,14 +87,17 @@ mintToken tp = do
             let tn          = tpToken tp
                 cs          = tokenCurSymbol
                 val         = Value.singleton cs tn 1
+                toRedeemer  = PLA.V2.Redeemer
+                            . PLA.V2.dataToBuiltinData
+                            . PLA.V2.toData
                 c           = case my of
                     Nothing -> Constraints.mustPayToPubKey x val
                     Just y  -> Constraints.mustPayToPubKeyAddress x y val
                 lookups     =  Constraints.plutusV2MintingPolicy tokenPolicy
                             <> Constraints.unspentOutputs (Map.singleton oref o)
-                constraints = Constraints.mustMintValue val          <>
-                              Constraints.mustSpendPubKeyOutput oref <>
-                              c
+                constraints =  Constraints.mustMintValueWithRedeemer (toRedeemer oref) val
+                            <> Constraints.mustSpendPubKeyOutput oref
+                            <> c
 
             void $ adjustAndSubmitWith @Void lookups constraints
             Contract.logInfo @String $ printf "minted %s" (show val)

@@ -5,7 +5,7 @@
 {-# LANGUAGE TypeApplications    #-}
 {-# LANGUAGE TypeFamilies        #-}
 
-module Week06.Monitor
+module Monitor
     ( monitor
     ) where
 
@@ -13,8 +13,8 @@ import           Data.Functor    (void)
 import qualified Data.Map        as Map
 import           Data.Monoid     (Last (..))
 import           Data.Text       (Text)
-import           Plutus.Contract as Contract
 import           Ledger
+import           Plutus.Contract as Contract
 import           Text.Printf     (printf)
 
 monitor :: Address -> Contract (Last Value) Empty Text a

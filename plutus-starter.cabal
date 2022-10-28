@@ -41,8 +41,11 @@ common lang
 library
     import: lang
     exposed-modules:
+      Monitor
+      PAB
       Token.OnChain
       Token.OffChain
+      Trace
       Utils
       Plutus.Contracts.Game
     build-depends:
@@ -68,6 +71,7 @@ library
       , lens -any
       , serialise -any
       , openapi3 -any
+      , prettyprinter -any
     hs-source-dirs: src examples/src
 
 test-suite plutus-example-projects-test

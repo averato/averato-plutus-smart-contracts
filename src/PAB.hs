@@ -3,7 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TypeApplications  #-}
 
-module Week06.PAB
+module PAB
     ( Address
     , TokenContracts (..)
     ) where
@@ -12,14 +12,19 @@ import           Data.Aeson                          (FromJSON, ToJSON)
 import           Data.OpenApi.Schema                 (ToSchema)
 import           GHC.Generics                        (Generic)
 import           Ledger                              (Address)
-import           Plutus.PAB.Effects.Contract.Builtin (Empty, HasDefinitions (..), SomeBuiltin (..), endpointsToSchemas)
+import           Plutus.PAB.Effects.Contract.Builtin (Empty,
+                                                      HasDefinitions (..),
+                                                      SomeBuiltin (..),
+                                                      endpointsToSchemas)
 import           Prettyprinter                       (Pretty (..), viaShow)
-import           Wallet.Emulator.Wallet              (knownWallet, mockWalletAddress)
+import           Wallet.Emulator.Wallet              (knownWallet,
+                                                      mockWalletAddress)
 
-import qualified Week06.Monitor                      as Monitor
-import qualified Week06.Token.OffChain               as Token
+import qualified Monitor                             as Monitor
+import qualified Token.OffChain                      as Token
 
-data TokenContracts = Mint Token.TokenParams | Monitor Address
+data TokenContracts = Mint Token.TokenParams
+                    | Monitor Address
     deriving (Eq, Ord, Show, Generic, FromJSON, ToJSON, ToSchema)
 
 instance Pretty TokenContracts where
@@ -27,7 +32,7 @@ instance Pretty TokenContracts where
 
 instance HasDefinitions TokenContracts where
 
-    getDefinitions        = [Mint exampleTP, Monitor exampleAddr]
+    getDefinitions             = [Mint exampleTP, Monitor exampleAddr]
 
     getContract (Mint tp)      = SomeBuiltin $ Token.mintToken @() @Empty tp
     getContract (Monitor addr) = SomeBuiltin $ Monitor.monitor addr
@@ -40,6 +45,5 @@ exampleAddr = mockWalletAddress $ knownWallet 1
 exampleTP :: Token.TokenParams
 exampleTP = Token.TokenParams
     { Token.tpAddress = exampleAddr
-    , Token.tpAmount  = 123456
     , Token.tpToken   = "PPP"
     }
