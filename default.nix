@@ -24,7 +24,7 @@ let
   #   }
   # }
   packages = import ./nix { inherit source-repo-override; };
-
+  # inherit source-repo-override
   inherit (packages) pkgs plutus-starter;
   project = plutus-starter.haskell.project;
 in
@@ -32,4 +32,9 @@ in
   inherit pkgs plutus-starter;
 
   inherit project;
+
+  plutus-starter-pab = plutus-starter.haskell.packages.plutus-starter.components.exes.plutus-starter-pab;
+  # Docker image buildup with error
+  # plutus-starter-image = import ./nix/docker.nix { inherit  source-repo-override; };
+
 }

@@ -22,7 +22,7 @@ import           Data.Aeson                          (FromJSON (..),
 import           Data.Default                        (def)
 import qualified Data.OpenApi                        as OpenApi
 import           GHC.Generics                        (Generic)
-import           Plutus.Contract                     (ContractError)
+-- import           Plutus.Contract                     (ContractError)
 -- import           Plutus.Contracts.Game               as Game
 import           Plutus.PAB.Effects.Contract.Builtin (Builtin,
                                                       BuiltinHandler (contractHandler),
