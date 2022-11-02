@@ -14,7 +14,10 @@ FROM build as build-plutus-starter-pab
 RUN nix-build -A plutus-starter-pab -o plutus-starter-pab-result default.nix
 
 FROM alpine as plutus-starter-pab
-COPY --from=build-starter-pab /build/plutus-starter-pab-result/bin/plutus-starter-pab /bin/
+COPY --from=build-plutus-starter-pab /build/plutus-starter-pab-result/bin/plutus-starter-pab /bin/
+
 STOPSIGNAL SIGINT
-ENTRYPOINT ["plutus-starter-pab"]
+EXPOSE 9080
+
+CMD ["plutus-starter-pab"]
 
