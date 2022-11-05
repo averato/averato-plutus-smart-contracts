@@ -22,6 +22,7 @@ let
     # If using materialization, be sure to disable it when source-repo-override is set or it won't take effect.
 
     sha256map = import ./sha256map.nix;
+    projectFileName = "cabal.project";
 
     modules = [
       {

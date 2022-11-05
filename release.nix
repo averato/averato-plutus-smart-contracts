@@ -38,13 +38,18 @@ let
     inherit source-repo-override;
   };
 
-  pkgs = packages.pkgs;
+  inherit (packages) pkgs plutus-starter project;
   haskellNix = pkgs.haskell-nix;
 
   # Just the packages in the project
   projectPackages = haskellNix.haskellLib.selectProjectPackages packages.project.hsPkgs;
 
   inherit (import ./nix/lib/ci.nix { inherit pkgs; }) dimension filterAttrsOnlyRecursive filterDerivations stripAttrsForHydra derivationAggregate;
+
+  # Allow reinstallation of terminfo as it's not installed with cross compilers.
+  patchedForCrossProject = project.appendModule
+      ({ lib, ...}: { options.nonReinstallablePkgs = lib.mkOption { apply = lib.remove "terminfo"; }; });
+  musl64Pkgs = patchedForCrossProject.projectCross.musl64.hsPkgs;
 
   # Collects haskell derivations and builds an attrset:
   #
@@ -76,11 +81,18 @@ let
     dimension "Haskell component" attrs select;
 
   ciJobsets = stripAttrsForHydra (filterDerivations {
+
+    docker-image = (import ./nix/docker.nix { inherit source-repo-override; }); 
+
     shell = (import ./shell.nix { inherit source-repo-override; });
 
     pureShell = (import ./shell.nix { pure = true; inherit source-repo-override; });
 
     build = pkgs.recurseIntoAttrs (mkHaskellDimension pkgs projectPackages);
+
+    plutus-starter-pab = projectPackages.plutus-starter.components.exes.plutus-starter-pab;
+
+    plutus-starter-pab-static = musl64Pkgs.plutus-starter.components.exes.plutus-starter-pab;
   });
 in
   ciJobsets // { required = derivationAggregate "required-plutus-starter" ciJobsets; }
