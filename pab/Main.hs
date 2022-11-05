@@ -14,26 +14,37 @@ module Main(main, writeCostingScripts) where
 import           Control.Monad                       (void)
 import           Control.Monad.Freer                 (interpret)
 import           Control.Monad.IO.Class              (MonadIO (..))
-import           Data.Aeson                          (FromJSON (..), ToJSON (..), genericToJSON, genericParseJSON
-                                                     , defaultOptions, Options(..))
+import           Data.Aeson                          (FromJSON (..),
+                                                      Options (..), ToJSON (..),
+                                                      defaultOptions,
+                                                      genericParseJSON,
+                                                      genericToJSON)
 import           Data.Default                        (def)
 import qualified Data.OpenApi                        as OpenApi
 import           GHC.Generics                        (Generic)
 import           Plutus.Contract                     (ContractError)
-import           Plutus.PAB.Effects.Contract.Builtin (Builtin, SomeBuiltin (..), BuiltinHandler(contractHandler))
+-- import           Plutus.Contracts.Game               as Game
+import           Plutus.PAB.Effects.Contract.Builtin (Builtin,
+                                                      BuiltinHandler (contractHandler),
+                                                      SomeBuiltin (..))
 import qualified Plutus.PAB.Effects.Contract.Builtin as Builtin
 import           Plutus.PAB.Simulator                (SimulatorEffectHandlers)
 import qualified Plutus.PAB.Simulator                as Simulator
 import qualified Plutus.PAB.Webserver.Server         as PAB.Server
-import           Plutus.Contracts.Game               as Game
-import           Plutus.Trace.Emulator.Extract       (writeScriptsTo, ScriptsConfig (..), Command (..))
+import           Plutus.Trace.Emulator.Extract       (Command (..),
+                                                      ScriptsConfig (..),
+                                                      ValidatorMode (FullyAppliedValidators),
+                                                      writeScriptsTo)
 import           Prettyprinter                       (Pretty (..), viaShow)
-import           Ledger.Index                        (ValidatorMode(..))
-import qualified Wallet.Emulator.Wallet as Wallet
+-- import           Ledger.Index                        (ValidatorMode(..))
+import qualified PAB
+import qualified Trace
+import qualified Wallet.Emulator.Wallet              as Wallet
+
 
 main :: IO ()
 main = void $ Simulator.runSimulationWith handlers $ do
-    Simulator.logString @(Builtin StarterContracts) "Starting plutus-starter PAB webserver on port 9080. Press enter to exit."
+    Simulator.logString @(Builtin PAB.TokenContracts) "Starting plutus-starter PAB webserver on port 9080. Press enter to exit."
 
     (wallet, _paymentPubKeyHash) <- Simulator.addWallet
     Simulator.waitNSlots 1
@@ -52,9 +63,9 @@ main = void $ Simulator.runSimulationWith handlers $ do
     -- Pressing enter results in the balances being printed
     void $ liftIO getLine
 
-    Simulator.logString @(Builtin StarterContracts) "Balances at the end of the simulation"
+    Simulator.logString @(Builtin PAB.TokenContracts) "Balances at the end of the simulation"
     b <- Simulator.currentBalances
-    Simulator.logBalances @(Builtin StarterContracts) b
+    Simulator.logBalances @(Builtin PAB.TokenContracts) b
 
     shutdown
 
@@ -65,17 +76,17 @@ writeCostingScripts = do
   let config = ScriptsConfig { scPath = "/tmp/plutus-costing-outputs/", scCommand = cmd }
       cmd    = Scripts { unappliedValidators = FullyAppliedValidators }
       -- Note: Here you can use any trace you wish.
-      trace  = correctGuessTrace
+      trace  = Trace.tokenTrace
   (totalSize, exBudget) <- writeScriptsTo config "game" trace def
   putStrLn $ "Total size = " <> show totalSize
   putStrLn $ "ExBudget = " <> show exBudget
 
 
-data StarterContracts =
-    GameContract
-    deriving (Eq, Ord, Show, Generic)
-    deriving anyclass OpenApi.ToSchema
-
+--data StarterContracts =
+--    PAB.TokenContracts
+--    deriving (Eq, Ord, Show, Generic)
+--    deriving anyclass OpenApi.ToSchema
+--
 -- NOTE: Because 'StarterContracts' only has one constructor, corresponding to
 -- the demo 'Game' contract, we kindly ask aeson to still encode it as if it had
 -- many; this way we get to see the label of the contract in the API output!
@@ -83,24 +94,24 @@ data StarterContracts =
 -- statement on 'StarterContracts' instead:
 --
 --    `... deriving anyclass (ToJSON, FromJSON)`
-instance ToJSON StarterContracts where
-  toJSON = genericToJSON defaultOptions {
-             tagSingleConstructors = True }
-instance FromJSON StarterContracts where
-  parseJSON = genericParseJSON defaultOptions {
-             tagSingleConstructors = True }
-
-instance Pretty StarterContracts where
-    pretty = viaShow
-
-instance Builtin.HasDefinitions StarterContracts where
-    getDefinitions = [GameContract]
-    getSchema =  \case
-        GameContract -> Builtin.endpointsToSchemas @Game.GameSchema
-    getContract = \case
-        GameContract -> SomeBuiltin (Game.game @ContractError)
-
-handlers :: SimulatorEffectHandlers (Builtin StarterContracts)
+--instance ToJSON StarterContracts where
+--  toJSON = genericToJSON defaultOptions {
+--             tagSingleConstructors = True }
+--instance FromJSON StarterContracts where
+--  parseJSON = genericParseJSON defaultOptions {
+--             tagSingleConstructors = True }
+--
+--instance Pretty StarterContracts where
+--    pretty = viaShow
+--
+--instance Builtin.HasDefinitions StarterContracts where
+--    getDefinitions = [GameContract]
+--    getSchema =  \case
+--        GameContract -> Builtin.endpointsToSchemas @Game.GameSchema
+--    getContract = \case
+--        GameContract -> SomeBuiltin (Game.game @ContractError)
+--
+handlers :: SimulatorEffectHandlers (Builtin PAB.TokenContracts)
 handlers =
     Simulator.mkSimulatorHandlers def
     $ interpret (contractHandler Builtin.handleBuiltin)

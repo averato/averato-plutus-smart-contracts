@@ -41,12 +41,20 @@ common lang
 library
     import: lang
     exposed-modules:
-      MyModule
+      Monitor
+      PAB
+      Token.OnChain
+      Token.OffChain
+      Trace
+      Utils
       Plutus.Contracts.Game
     build-depends:
       base >= 4.9 && < 5,
       aeson -any,
       bytestring -any,
+      cardano-api -any,
+      cardano-ledger-core -any,
+      cardano-crypto-class -any,
       containers -any,
       freer-extras -any,
       playground-common -any,
@@ -57,8 +65,13 @@ library
       plutus-tx -any,
       plutus-tx-plugin -any,
       plutus-script-utils -any,
-      text -any,
-      lens -any,
+      plutus-chain-index-core -any,
+      plutus-pab -any,
+      text -any
+      , lens -any
+      , serialise -any
+      , openapi3 -any
+      , prettyprinter -any
     hs-source-dirs: src examples/src
 
 test-suite plutus-example-projects-test
