@@ -5,6 +5,14 @@
 {-# LANGUAGE TypeApplications    #-}
 {-# LANGUAGE TypeFamilies        #-}
 
+{-|
+Module      : Monitor
+Description : Shamesly stolen from plutus-pioneer lecture 6
+Stability   : experimental
+Portability : POSIX
+
+@Monitors@ given addres for changes.
+-}
 module Monitor
     ( monitor
     ) where
