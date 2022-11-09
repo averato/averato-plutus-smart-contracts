@@ -95,7 +95,6 @@ library
 --    text -any,
 --    tasty-hedgehog >=0.2.0.0
 
-
 executable plutus-starter-pab
   import: lang
   main-is: Main.hs
@@ -103,14 +102,21 @@ executable plutus-starter-pab
   ghc-options:
     -threaded
   build-depends:
-    base >= 4.9 && < 5,
-    data-default -any,
-    plutus-contract -any,
-    plutus-pab -any,
-    plutus-starter -any,
-    aeson -any,
-    freer-simple -any,
-    prettyprinter -any,
-    freer-extras -any,
-    plutus-ledger -any,
-    openapi3 -any,
+    base >= 4.9 && < 5
+    , cardano-api -any
+    , plutus-contract -any
+    , plutus-pab -any
+    , plutus-starter -any
+    , plutus-ledger -any
+    , plutus-chain-index-core -any
+    -- external depndencies
+    , aeson -any
+    , freer-simple -any
+    , prettyprinter -any
+    , freer-extras -any
+    , openapi3 -any
+    , yaml -any
+    , optparse-applicative -any
+    , pretty-simple
+    , data-default -any
+    , async -any

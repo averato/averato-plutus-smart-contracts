@@ -29,7 +29,7 @@ let
   # }
   packages = import ./nix { inherit source-repo-override; };
   # inherit source-repo-override
-  inherit (packages) pkgs plutus-starter;
+  inherit (packages) pkgs plutus-starter plutus;
   project = plutus-starter.haskell.project;
 #  {
 #    inputMap = { "https://input-output-hk.github.io/cardano-haskell-packages" = CHaP; };
@@ -48,7 +48,7 @@ let
 #  };
 in
 {
-  inherit pkgs plutus-starter;
+  inherit pkgs plutus-starter plutus;
 
   inherit project;
 

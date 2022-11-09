@@ -1,118 +1,117 @@
-{-# LANGUAGE DataKinds          #-}
-{-# LANGUAGE DeriveAnyClass     #-}
-{-# LANGUAGE DeriveGeneric      #-}
-{-# LANGUAGE DerivingStrategies #-}
-{-# LANGUAGE FlexibleContexts   #-}
-{-# LANGUAGE LambdaCase         #-}
-{-# LANGUAGE RankNTypes         #-}
-{-# LANGUAGE TypeApplications   #-}
-{-# LANGUAGE TypeFamilies       #-}
-{-# LANGUAGE TypeOperators      #-}
+{-# LANGUAGE DeriveGeneric       #-}
+{-# LANGUAGE ImportQualifiedPost #-}
+{-# LANGUAGE NumericUnderscores  #-}
+{-# LANGUAGE OverloadedStrings   #-}
+{-# LANGUAGE TypeApplications    #-}
 
-module Main(main, writeCostingScripts) where
+module Main
+    ( main
+    ) where
 
-import           Control.Monad                       (void)
-import           Control.Monad.Freer                 (interpret)
-import           Control.Monad.IO.Class              (MonadIO (..))
-import           Data.Aeson                          (FromJSON (..),
-                                                      Options (..), ToJSON (..),
-                                                      defaultOptions,
-                                                      genericParseJSON,
-                                                      genericToJSON)
-import           Data.Default                        (def)
-import qualified Data.OpenApi                        as OpenApi
-import           GHC.Generics                        (Generic)
--- import           Plutus.Contract                     (ContractError)
--- import           Plutus.Contracts.Game               as Game
-import           Plutus.PAB.Effects.Contract.Builtin (Builtin,
-                                                      BuiltinHandler (contractHandler),
-                                                      SomeBuiltin (..))
-import qualified Plutus.PAB.Effects.Contract.Builtin as Builtin
-import           Plutus.PAB.Simulator                (SimulatorEffectHandlers)
-import qualified Plutus.PAB.Simulator                as Simulator
-import qualified Plutus.PAB.Webserver.Server         as PAB.Server
-import           Plutus.Trace.Emulator.Extract       (Command (..),
-                                                      ScriptsConfig (..),
-                                                      ValidatorMode (FullyAppliedValidators),
-                                                      writeScriptsTo)
-import           Prettyprinter                       (Pretty (..), viaShow)
--- import           Ledger.Index                        (ValidatorMode(..))
-import qualified PAB
-import qualified Trace
-import qualified Wallet.Emulator.Wallet              as Wallet
+import qualified Cardano.Api                            as CAPI
+import           Cardano.Node.Types                     (PABServerConfig (..))
+-- import           DemoContract                        (DemoContract)
+import           Data.Yaml                              (decodeFileThrow)
+import           GHC.Generics                           (Generic)
+import           Options.Applicative                    (Parser, ParserInfo,
+                                                         auto, execParser,
+                                                         fullDesc, help, helper,
+                                                         info, long, metavar,
+                                                         option, progDesc,
+                                                         short, showDefault,
+                                                         strOption, value,
+                                                         (<**>))
+import qualified Plutus.PAB.Effects.Contract.Builtin    as Builtin
+import           Plutus.PAB.Run                         (runWithOpts)
+import           Plutus.PAB.Run.CommandParser           (AppOpts (..))
+import qualified Plutus.PAB.Types                       as PAB.Config
+import           Text.Pretty.Simple                     (pPrint)
 
+import           Cardano.Node.Types                     (PABServerConfig (..))
+import           Cardano.Protocol.Socket.Mock.Client    (TxSendHandle (..),
+                                                         queueTx, runTxSender)
+import           Control.Concurrent                     (threadDelay)
+import           Control.Concurrent.Async               (async)
+import           Control.Monad                          (void)
+import           Control.Monad.Freer.Extras.Beam.Sqlite (DbConfig (..))
+import           Control.Monad.IO.Class                 (MonadIO, liftIO)
+import           Data.Either                            (fromRight)
+import           GHC.Generics                           (Generic)
+import           Ledger                                 (testnet)
+import qualified Ledger.Ada                             as Ada
+import           Ledger.Blockchain                      (OnChainTx (..))
+import           Ledger.Index                           (UtxoIndex (..),
+                                                         insertBlock)
+import           Ledger.Slot                            (Slot (..))
+import           Ledger.Tx                              (CardanoTx (EmulatorTx),
+                                                         Tx (..))
+import           PAB
+import           Plutus.ChainIndex.Types                (Point (..))
+import qualified Plutus.PAB.App                         as PAB.App
+import           Plutus.PAB.Effects.Contract.Builtin    (handleBuiltin)
+import           Plutus.PAB.Run.Command                 (ConfigCommand (..))
+
+-- | Command line options
+newtype CliOptions = MkCliOptions { unServerConfig :: String }
+  deriving (Show, Generic)
+
+-- | Command line parser
+cmdOptions :: Parser CliOptions
+cmdOptions = MkCliOptions
+  <$> strOption
+    (  long "config"
+    <> short 'c'
+    <> metavar "CONFIG"
+    <> help "Read configuration from the CONFIG file"
+    )
+
+prgHelp :: ParserInfo CliOptions
+prgHelp = info (cmdOptions <**> helper)
+        ( fullDesc
+       <> progDesc "PAB Server for the CardeAvato smartcontracts." )
+
+getCliOptions :: IO CliOptions
+getCliOptions = do
+   opts <- execParser prgHelp
+   pPrint opts
+   return opts
+
+decodeConfig :: IO PAB.Config.Config
+decodeConfig = getCliOptions >>= liftIO . decodeFileThrow . unServerConfig
 
 main :: IO ()
-main = void $ Simulator.runSimulationWith handlers $ do
-    Simulator.logString @(Builtin PAB.TokenContracts) "Starting plutus-starter PAB webserver on port 9080. Press enter to exit."
+main = do
+    -- Keep this here for now. Eventually, This function will call the `migrate`
+    -- command before running the webserver.
+    config <- decodeConfig
+    pPrint config
+    let appOpts = AppOpts
+                { minLogLevel = Nothing
+                , logConfigPath = Nothing
+                , configPath = Nothing
+                , runEkgServer = False
+                , storageBackend = PAB.App.BeamBackend
+                , cmd = PABWebserver
+                , passphrase = Nothing
+                , rollbackHistory = Nothing
+                , resumeFrom = PointAtGenesis
+                }
+--        networkID = NetworkIdWrapper $ CAPI.Testnet $ CAPI.NetworkMagic 1097911063
+--        config = PAB.Config.defaultConfig
+--             { PAB.Config.nodeServerConfig = def{pscNodeMode=AlonzoNode,pscNetworkId=networkID} -- def{mscSocketPath=nodeSocketFile socketPath,mscNodeMode=AlonzoNode,mscNetworkId=networkID}
+--             , PAB.Config.dbConfig = def -- {dbConfigFile = "plutus-pab.db"} -- def{dbConfigFile = T.pack (dir </> "plutus-pab.db")}
+--             , PAB.Config.chainQueryConfig = def -- def{PAB.CI.ciBaseUrl = PAB.CI.ChainIndexUrl $ BaseUrl Http "localhost" chainIndexPort ""}
+--             , PAB.Config.walletServerConfig = def -- def{Wallet.Config.baseUrl=WalletUrl walletUrl}
+--             }
 
-    (wallet, _paymentPubKeyHash) <- Simulator.addWallet
-    Simulator.waitNSlots 1
-    liftIO $ writeFile "scripts/wallet" (show $ Wallet.getWalletId wallet)
+--    void . async
+    runWithOpts @TokenContracts handleBuiltin (Just config) appOpts{cmd=Migrate}
+    sleep 2
+    pPrint "PAB Server started"
+--    void . async $
+    runWithOpts @TokenContracts handleBuiltin (Just config) appOpts{cmd=PABWebserver}
+    -- -- Pressing enter stops the server
+    void getLine
 
-    shutdown <- PAB.Server.startServerDebug
-
-    -- Example of spinning up a game instance on startup
-    -- void $ Simulator.activateContract (Wallet 1) GameContract
-    -- You can add simulator actions here:
-    -- Simulator.observableState
-    -- etc.
-    -- That way, the simulation gets to a predefined state and you don't have to
-    -- use the HTTP API for setup.
-
-    -- Pressing enter results in the balances being printed
-    void $ liftIO getLine
-
-    Simulator.logString @(Builtin PAB.TokenContracts) "Balances at the end of the simulation"
-    b <- Simulator.currentBalances
-    Simulator.logBalances @(Builtin PAB.TokenContracts) b
-
-    shutdown
-
--- | An example of computing the script size for a particular trace.
--- Read more: <https://plutus.readthedocs.io/en/latest/plutus/howtos/analysing-scripts.html>
-writeCostingScripts :: IO ()
-writeCostingScripts = do
-  let config = ScriptsConfig { scPath = "/tmp/plutus-costing-outputs/", scCommand = cmd }
-      cmd    = Scripts { unappliedValidators = FullyAppliedValidators }
-      -- Note: Here you can use any trace you wish.
-      trace  = Trace.tokenTrace
-  (totalSize, exBudget) <- writeScriptsTo config "game" trace def
-  putStrLn $ "Total size = " <> show totalSize
-  putStrLn $ "ExBudget = " <> show exBudget
-
-
---data StarterContracts =
---    PAB.TokenContracts
---    deriving (Eq, Ord, Show, Generic)
---    deriving anyclass OpenApi.ToSchema
---
--- NOTE: Because 'StarterContracts' only has one constructor, corresponding to
--- the demo 'Game' contract, we kindly ask aeson to still encode it as if it had
--- many; this way we get to see the label of the contract in the API output!
--- If you simple have more contracts, you can just use the anyclass deriving
--- statement on 'StarterContracts' instead:
---
---    `... deriving anyclass (ToJSON, FromJSON)`
---instance ToJSON StarterContracts where
---  toJSON = genericToJSON defaultOptions {
---             tagSingleConstructors = True }
---instance FromJSON StarterContracts where
---  parseJSON = genericParseJSON defaultOptions {
---             tagSingleConstructors = True }
---
---instance Pretty StarterContracts where
---    pretty = viaShow
---
---instance Builtin.HasDefinitions StarterContracts where
---    getDefinitions = [GameContract]
---    getSchema =  \case
---        GameContract -> Builtin.endpointsToSchemas @Game.GameSchema
---    getContract = \case
---        GameContract -> SomeBuiltin (Game.game @ContractError)
---
-handlers :: SimulatorEffectHandlers (Builtin PAB.TokenContracts)
-handlers =
-    Simulator.mkSimulatorHandlers def
-    $ interpret (contractHandler Builtin.handleBuiltin)
-
+sleep :: Int -> IO ()
+sleep n = threadDelay $ n * 1_000_000
