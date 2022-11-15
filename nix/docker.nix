@@ -1,7 +1,7 @@
 { source-repo-override ? {}
 , pkgs
 , execPackages
-, img ? { name = "pab"; port = "9080"; cmd = "/bin/plutus-starter-pab --config /etc/config.yaml"; components = [ execPackages.plutus-starter-pab ]; } 
+, img ? { name = "pab"; port = "9080"; cmd = "/bin/plutus-starter-pab --config /etc/config.yaml webserver"; components = [ execPackages.plutus-starter-pab ]; } 
 }:
 with pkgs;
 let
