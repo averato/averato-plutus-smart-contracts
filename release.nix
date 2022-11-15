@@ -51,7 +51,7 @@ let
 #  patchedForCrossProject = project.appendModule
 #      ({ lib, ...}: { options.nonReinstallablePkgs = lib.mkOption { apply = lib.remove "terminfo"; }; });
 #  musl64Pkgs = patchedForCrossProject.projectCross.musl64.hsPkgs;
-  img = { name = "chain-index"; port = "9083"; cmd = "/bin/plutus-chain-index --config /etc/chain-index-config.json start-index"; components = [ plutus.plutus-chain-index ]; };
+  img = { name = "chain-index"; port = "9083"; cmd = ["/bin/plutus-chain-index" "--config /etc/chain-index-config.json"  "start-index"]; components = [ plutus.plutus-chain-index ]; };
   # Collects haskell derivations and builds an attrset:
   #
   # { library = { ... }

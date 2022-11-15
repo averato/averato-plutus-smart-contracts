@@ -1,7 +1,7 @@
 { source-repo-override ? {}
 , pkgs
 , execPackages
-, img ? { name = "pab"; port = "9080"; cmd = "/bin/plutus-starter-pab --config /etc/config.yaml webserver"; components = [ execPackages.plutus-starter-pab ]; } 
+, img ? { name = "pab"; port = "9080"; cmd = ["/bin/cardevato-pab" "--config /etc/config.yaml"]; components = [ execPackages.cardevato-pab ]; } 
 }:
 with pkgs;
 let
@@ -46,12 +46,9 @@ in
 #    fromImage = nixFromDockerHub;
     contents = img.components ;
     tag = "latest";
+    created = "now";
     config = {
-        Cmd = [ 
-          " 
-          ${img.cmd}
-          "
-        ];
+        Cmd = img.cmd;
         ExposedPorts = {
           "${img.port}/tcp" = {};
         };
