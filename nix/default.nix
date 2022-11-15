@@ -17,5 +17,5 @@ let
 
 in
 {
-  inherit pkgs plutus-starter;
+  inherit pkgs plutus-starter plutus;
 }

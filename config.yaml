@@ -1,0 +1,52 @@
+sqliteDB:
+  dbConfigFile: ./primary.db
+  dbConfigPoolSize: 20
+
+pabWebserverConfig:
+  baseUrl: http://localhost:9080
+  staticDir: .
+  permissiveCorsPolicy: False
+  enableMarconi: False  
+
+walletServerConfig:
+  tag: LocalWalletConfig
+  walletSettings:
+    baseUrl: http://172.16.239.4:9082
+
+nodeServerConfig:
+  pscBaseUrl: http://172.16.239.5:9081
+  pscSocketPath: ipc/node.socket
+  pscKeptBlocks: 10000
+  pscNetworkId: "2"
+  pscSlotConfig:
+    scSlotZeroTime: 1596059091000 # Wednesday, July 29, 2020 21:44:51 - shelley launch time in milliseconds
+    scSlotLength: 1000 # In milliseconds
+  pscInitialTxWallets:
+    - getWallet: 1
+    - getWallet: 2
+    - getWallet: 3
+  pscNodeMode: AlonzoNode
+
+chainIndexConfig:
+  ciBaseUrl: http://172.16.239.3:9083
+  ciWatchedAddresses: [
+  ]
+
+requestProcessingConfig:
+  requestProcessingInterval: 1
+
+gningProcessConfig:
+spBaseUrl: http://localhost:9084
+spWallet:
+  getWallet: 1
+
+tadataServerConfig:
+mdBaseUrl: http://localhost:9085
+
+developmentOptions:
+  pabRollbackHistory: null
+  pabResumeFrom:
+    { "tag" : "Point"
+    , "pointBlockId" : "ac7874a363f0d2701bbce7d86025df5dc7e067a86210fc4fd82a95688ca33951"
+    , "pointSlot" : { "getSlot" : 1593976 }
+    }

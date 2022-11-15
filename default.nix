@@ -29,7 +29,7 @@ let
   # }
   packages = import ./nix { inherit source-repo-override; };
   # inherit source-repo-override
-  inherit (packages) pkgs plutus-starter;
+  inherit (packages) pkgs plutus-starter plutus;
   project = plutus-starter.haskell.project;
 #  {
 #    inputMap = { "https://input-output-hk.github.io/cardano-haskell-packages" = CHaP; };
@@ -48,12 +48,13 @@ let
 #  };
 in
 {
-  inherit pkgs plutus-starter;
+  inherit pkgs plutus-starter plutus;
 
   inherit project;
 
-  # plutus-starter-pab = plutus-starter.haskell.packages.plutus-starter.components.exes.plutus-starter-pab;
-  # Docker image buildup with error
-  # plutus-starter-image = import ./nix/docker.nix { inherit  source-repo-override; };
+  # This original server to be run with plutus-starter-pab --config config.file webserver
+  plutus-starter-pab = plutus-starter.haskell.packages.plutus-starter.components.exes.plutus-starter-pab;
 
+  # This is custom implementation with migration and webserver task to be run by: cardevato-pab -c config.file  
+  cardevato-pab = plutus-starter.haskell.packages.plutus-starter.components.exes.cardevato-pab;
 }

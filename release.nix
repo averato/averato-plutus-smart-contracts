@@ -38,19 +38,20 @@ let
     inherit source-repo-override;
   };
 
-  inherit (packages) pkgs plutus-starter project;
+  inherit (packages) pkgs plutus-starter plutus project;
   haskellNix = pkgs.haskell-nix;
 
   # Just the packages in the project
-  projectPackages = haskellNix.haskellLib.selectProjectPackages packages.project.hsPkgs;
+  projectPackages = haskellNix.haskellLib.selectProjectPackages project.hsPkgs;
+  execPackages =  projectPackages.plutus-starter.components.exes;
 
   inherit (import ./nix/lib/ci.nix { inherit pkgs; }) dimension filterAttrsOnlyRecursive filterDerivations stripAttrsForHydra derivationAggregate;
 
   # Allow reinstallation of terminfo as it's not installed with cross compilers.
-  patchedForCrossProject = project.appendModule
-      ({ lib, ...}: { options.nonReinstallablePkgs = lib.mkOption { apply = lib.remove "terminfo"; }; });
-  musl64Pkgs = patchedForCrossProject.projectCross.musl64.hsPkgs;
-
+#  patchedForCrossProject = project.appendModule
+#      ({ lib, ...}: { options.nonReinstallablePkgs = lib.mkOption { apply = lib.remove "terminfo"; }; });
+#  musl64Pkgs = patchedForCrossProject.projectCross.musl64.hsPkgs;
+  img = { name = "chain-index"; port = "9083"; cmd = ["/bin/plutus-chain-index" "--config /etc/chain-index-config.json"  "start-index"]; components = [ plutus.plutus-chain-index ]; };
   # Collects haskell derivations and builds an attrset:
   #
   # { library = { ... }
@@ -78,11 +79,9 @@ let
         "checks" = collectChecks;
       };
     in
-    dimension "Haskell component" attrs select;
+      dimension "Haskell component" attrs select;
 
   ciJobsets = stripAttrsForHydra (filterDerivations {
-
-    docker-image = (import ./nix/docker.nix { inherit source-repo-override; }); 
 
     shell = (import ./shell.nix { inherit source-repo-override; });
 
@@ -90,9 +89,17 @@ let
 
     build = pkgs.recurseIntoAttrs (mkHaskellDimension pkgs projectPackages);
 
-    plutus-starter-pab = projectPackages.plutus-starter.components.exes.plutus-starter-pab;
+    # plutus-starter-pab = execPackages.plutus-starter-pab;
 
-    plutus-starter-pab-static = musl64Pkgs.plutus-starter.components.exes.plutus-starter-pab;
+    # plutus-starter-pab-static = musl64Pkgs.plutus-starter.components.exes.plutus-starter-pab;
+
+    pab-chain-index = plutus.plutus-chain-index;
+
+    pab-docker = import ./nix/docker.nix { inherit source-repo-override pkgs execPackages; };
+
+    chain-index-docker = import ./nix/docker.nix { inherit source-repo-override pkgs execPackages img; }; 
+
+    # pab-chain-index-static = musl64Pkgs.plutus-starter.components.exes.pab-chain-index;
   });
 in
   ciJobsets // { required = derivationAggregate "required-plutus-starter" ciJobsets; }

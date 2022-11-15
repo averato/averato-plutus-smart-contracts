@@ -14,21 +14,25 @@ module Trace
     ) where
 
 import           Control.Monad          hiding (fmap)
-import           Plutus.Contract        as Contract
-import           Plutus.Trace.Emulator  as Emulator
+import           Data.Text              (Text)
+import           Ledger                 (CurrencySymbol)
+import qualified Plutus.Contract        as Contract
+import qualified Plutus.Trace.Emulator  as Emulator
 import           PlutusTx.Prelude       hiding (Semigroup (..), unless)
 import           Prelude                (IO)
+import           Token.OffChain
 import           Wallet.Emulator.Wallet
 
-import           Token.OffChain
-
 testToken :: IO ()
-testToken = runEmulatorTraceIO tokenTrace
+testToken = Emulator.runEmulatorTraceIO tokenTrace
 
-tokenTrace :: EmulatorTrace ()
+tokenTrace :: Emulator.EmulatorTrace ()
 tokenTrace = do
     let w1 = knownWallet 1
-    void $ activateContractWallet w1 $ void $ mintToken @() @Empty TokenParams
-        { tpToken   = "USDT"
-        , tpAddress = mockWalletAddress w1
-        }
+        params =  TokenParams
+          { tpToken   = "USDT"
+          , tpAddress = mockWalletAddress w1
+          }
+        contract :: Contract.Contract ()  MintSchema Text CurrencySymbol
+        contract = mintToken params
+    void $ Emulator.activateContractWallet w1 $ void contract

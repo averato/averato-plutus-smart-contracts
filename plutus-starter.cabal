@@ -47,31 +47,32 @@ library
       Token.OffChain
       Trace
       Utils
---      Plutus.Contracts.Game
     build-depends:
-      base >= 4.9 && < 5,
-      aeson -any,
-      bytestring -any,
-      cardano-api -any,
-      cardano-ledger-core -any,
-      cardano-crypto-class -any,
-      containers -any,
-      freer-extras -any,
-      playground-common -any,
-      plutus-contract -any,
-      plutus-ledger -any,
-      plutus-ledger-api -any,
-      plutus-ledger-constraints -any,
-      plutus-tx -any,
-      plutus-tx-plugin -any,
-      plutus-script-utils -any,
-      plutus-chain-index-core -any,
-      plutus-pab -any,
-      text -any
+        base >= 4.9 && < 5
+      , aeson -any
+      , bytestring -any
+      , cardano-api -any
+      , cardano-ledger-core -any
+      , cardano-crypto-class -any
+      , containers -any
+      , freer-extras -any
+      , text -any
       , lens -any
       , serialise -any
       , openapi3 -any
       , prettyprinter -any
+     
+      , plutus-ledger -any
+      , plutus-ledger-api -any
+      , plutus-ledger-constraints -any
+      , plutus-tx -any
+      , plutus-tx-plugin -any
+      , plutus-script-utils -any
+      , plutus-chain-index-core -any
+      , plutus-pab -any
+      , plutus-contract -any
+      , playground-common -any
+
     hs-source-dirs: src
 
 --test-suite plutus-example-projects-test
@@ -95,6 +96,33 @@ library
 --    text -any,
 --    tasty-hedgehog >=0.2.0.0
 
+executable cardevato-pab 
+  import: lang
+  main-is: Main.hs
+  hs-source-dirs: app
+  ghc-options:
+    -threaded
+  build-depends:
+    base >= 4.9 && < 5
+    , cardano-api -any
+    , plutus-contract -any
+    , plutus-pab -any
+    , plutus-starter -any
+    , plutus-ledger -any
+    , plutus-chain-index-core -any
+    -- external depndencies
+    , aeson -any
+    , freer-simple -any
+    , prettyprinter -any
+    , freer-extras -any
+    , openapi3 -any
+    , yaml -any
+    , optparse-applicative -any
+    , pretty-simple
+    , data-default -any
+    , async -any
+    , playground-common -any
+    , plutus-contract -any,
 
 executable plutus-starter-pab
   import: lang
@@ -103,14 +131,24 @@ executable plutus-starter-pab
   ghc-options:
     -threaded
   build-depends:
-    base >= 4.9 && < 5,
-    data-default -any,
-    plutus-contract -any,
-    plutus-pab -any,
-    plutus-starter -any,
-    aeson -any,
-    freer-simple -any,
-    prettyprinter -any,
-    freer-extras -any,
-    plutus-ledger -any,
-    openapi3 -any,
+    base >= 4.9 && < 5
+    , cardano-api -any
+    , plutus-contract -any
+    , plutus-pab -any
+    , plutus-starter -any
+    , plutus-ledger -any
+    , plutus-chain-index-core -any
+    -- external depndencies
+    , aeson -any
+    , freer-simple -any
+    , prettyprinter -any
+    , freer-extras -any
+    , openapi3 -any
+    , yaml -any
+    , optparse-applicative -any
+    , pretty-simple
+    , data-default -any
+    , async -any
+    , playground-common -any
+    , plutus-contract -any,
+
