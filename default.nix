@@ -52,8 +52,9 @@ in
 
   inherit project;
 
-  # plutus-starter-pab = plutus-starter.haskell.packages.plutus-starter.components.exes.plutus-starter-pab;
-  # Docker image buildup with error
-  # plutus-starter-image = import ./nix/docker.nix { inherit  source-repo-override; };
+  # This original server to be run with plutus-starter-pab --config config.file webserver
+  plutus-starter-pab = plutus-starter.haskell.packages.plutus-starter.components.exes.plutus-starter-pab;
 
+  # This is custom implementation with migration and webserver task to be run by: cardevato-pab -c config.file  
+  cardevato-pab = plutus-starter.haskell.packages.plutus-starter.components.exes.cardevato-pab;
 }

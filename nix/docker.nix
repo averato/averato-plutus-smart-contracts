@@ -15,14 +15,14 @@ let
 #  projectPackages = pkgs.haskell-nix.haskellLib.selectProjectPackages project.hsPkgs;
 #  execPackages =  projectPackages.plutus-starter.components.exes;
 #  img-components = if isDefaultImage then [ execPackages.plutus-starter-pab ] else [ plutus.plutus-chain-index ];
-nixFromDockerHub = dockerTools.pullImage {
-    imageName = "nixos/nix";
-    imageDigest = "sha256:85299d86263a3059cf19f419f9d286cc9f06d3c13146a8ebbb21b3437f598357";
-    sha256 = "19fw0n3wmddahzr20mhdqv6jkjn1kanh6n2mrr08ai53dr8ph5n7";
-    finalImageTag = "2.2.1";
-    finalImageName = "nix";
-  };
-  
+#nixFromDockerHub = dockerTools.pullImage {
+#    imageName = "nixos/nix";
+#    imageDigest = "sha256:85299d86263a3059cf19f419f9d286cc9f06d3c13146a8ebbb21b3437f598357";
+#    sha256 = "19fw0n3wmddahzr20mhdqv6jkjn1kanh6n2mrr08ai53dr8ph5n7";
+#    finalImageTag = "2.2.1";
+#    finalImageName = "nix";
+#  };
+#  
 #  baseImage = dockerTools.buildLayeredImage {
 #    name = "base";
 #    tag = "latest";
@@ -43,12 +43,14 @@ nixFromDockerHub = dockerTools.pullImage {
 in  
   dockerTools.buildImage {
     name = img.name;
-    fromImage = nixFromDockerHub;
+#    fromImage = nixFromDockerHub;
     contents = img.components ;
     tag = "latest";
     config = {
         Cmd = [ 
-          "${img.cmd}"
+          " 
+          ${img.cmd}
+          "
         ];
         ExposedPorts = {
           "${img.port}/tcp" = {};

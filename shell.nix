@@ -5,7 +5,7 @@ let
 
 in
   project.shellFor {
-    withHoogle = true;
+    withHoogle = false;
 
     nativeBuildInputs = with plutus-starter; [
       hlint

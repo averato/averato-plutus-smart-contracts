@@ -79,13 +79,9 @@ let
         "checks" = collectChecks;
       };
     in
-    dimension "Haskell component" attrs select;
+      dimension "Haskell component" attrs select;
 
   ciJobsets = stripAttrsForHydra (filterDerivations {
-
-    pab-docker = import ./nix/docker.nix { inherit source-repo-override pkgs execPackages; };
-
-    chain-index-docker = import ./nix/docker.nix { inherit source-repo-override pkgs execPackages img; }; 
 
     shell = (import ./shell.nix { inherit source-repo-override; });
 
@@ -93,11 +89,15 @@ let
 
     build = pkgs.recurseIntoAttrs (mkHaskellDimension pkgs projectPackages);
 
-    plutus-starter-pab = projectPackages.plutus-starter.components.exes.plutus-starter-pab;
+    # plutus-starter-pab = execPackages.plutus-starter-pab;
 
     # plutus-starter-pab-static = musl64Pkgs.plutus-starter.components.exes.plutus-starter-pab;
 
     pab-chain-index = plutus.plutus-chain-index;
+
+    pab-docker = import ./nix/docker.nix { inherit source-repo-override pkgs execPackages; };
+
+    chain-index-docker = import ./nix/docker.nix { inherit source-repo-override pkgs execPackages img; }; 
 
     # pab-chain-index-static = musl64Pkgs.plutus-starter.components.exes.pab-chain-index;
   });
